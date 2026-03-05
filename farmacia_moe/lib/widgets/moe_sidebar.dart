@@ -1,8 +1,11 @@
-// lib/widgets/moe_sidebar.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme.dart';
+import '../providers/navigation_provider.dart';
 
 class MoeSidebar extends StatelessWidget {
+  const MoeSidebar({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -10,11 +13,24 @@ class MoeSidebar extends StatelessWidget {
       backgroundColor: Colors.white,
       child: Stack(
         children: [
-          SafeArea( // Para que los items no queden debajo del notch
+          SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 20), // Espacio inicial estético
+                const SizedBox(height: 30),
+                // Título opcional pequeño o logo si deseas
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: Text(
+                    "MENÚ PRINCIPAL",
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      fontSize: 12
+                    ),
+                  ),
+                ),
                 _item(context, Icons.inventory_2_outlined, "Inventario", 0),
                 _item(context, Icons.add_circle_outline, "Registrar Medicina", 1),
                 _item(context, Icons.shopping_cart_outlined, "Carrito", 2),
@@ -25,7 +41,7 @@ class MoeSidebar extends StatelessWidget {
             ),
           ),
           
-          // Botón de cierre en el borde derecho central
+          // Botón de cierre con flecha en el centro del borde derecho
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
@@ -50,16 +66,33 @@ class MoeSidebar extends StatelessWidget {
   }
 
   Widget _item(BuildContext context, IconData icon, String title, int index) {
-    return ListTile(
-      leading: Icon(icon, color: MoeTheme.primaryBlue),
-      title: Text(  
-        title, 
-        style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.black87)
+    // Usamos listen: false porque solo queremos ejecutar la función, no reconstruir el item aquí
+    final navProvider = Provider.of<NavigationProvider>(context, listen: false);
+    final isSelected = Provider.of<NavigationProvider>(context).currentIndex == index;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      decoration: BoxDecoration(
+        color: isSelected ? MoeTheme.lightBlue : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
       ),
-      onTap: () {
-        // Implementaremos la navegación con Provider aquí
-        Navigator.pop(context);
-      },
+      child: ListTile(
+        leading: Icon(
+          icon, 
+          color: isSelected ? MoeTheme.primaryBlue : Colors.grey[700]
+        ),
+        title: Text(
+          title, 
+          style: TextStyle(
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, 
+            color: isSelected ? MoeTheme.primaryBlue : Colors.black87
+          )
+        ),
+        onTap: () {
+          navProvider.setIndex(index); // Cambia la pantalla en el MainLayout
+          Navigator.pop(context);      // Cierra el Sidebar
+        },
+      ),
     );
   }
 }
