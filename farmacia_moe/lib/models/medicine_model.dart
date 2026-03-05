@@ -9,7 +9,7 @@ class Medicine {
   final int stock;
   final double unitPrice;
   final double? packagePrice;
-  final int? quantityPack;s
+  final int? quantityPack;
   final double? buyPrice; // Nuevo campo
   final String? description;
   final DateTime? expirationDate;
