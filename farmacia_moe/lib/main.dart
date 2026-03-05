@@ -30,17 +30,26 @@ class MainLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-        title: const Text("La Farmacia de Moe", style: TextStyle(color: Colors.white)),
-      ),
+      // Eliminamos la AppBar para maximizar el espacio
       drawer: MoeSidebar(),
-      body: const Center(child: Text("Bienvenido al Inventario")),
+      body: Stack(
+        children: [
+          // El contenido principal de la ventana (Inventario, etc.)
+          const Center(child: Text("Contenido del Inventario")),
+
+          // Botón flotante para abrir el Sidebar
+          Positioned(
+            top: 40, // Margen para no chocar con la barra de estado del celular
+            left: 10,
+            child: FloatingActionButton(
+              mini: true, // Lo hacemos pequeño para que sea minimalista
+              backgroundColor: MoeTheme.primaryBlue,
+              onPressed: () => Scaffold.of(context).openDrawer(),
+              child: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 18),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

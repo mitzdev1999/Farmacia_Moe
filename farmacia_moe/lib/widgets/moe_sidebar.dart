@@ -7,38 +7,40 @@ class MoeSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       width: MediaQuery.of(context).size.width * 0.75,
+      backgroundColor: Colors.white,
       child: Stack(
         children: [
-          Column(
-            children: [
-              DrawerHeader(
-                decoration: BoxDecoration(color: MoeTheme.primaryBlue),
-                child: Center(
-                  child: Text("La Farmacia de Moe", 
-                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                ),
-              ),
-              _item(context, Icons.inventory, "Inventario", 0),
-              _item(context, Icons.add_box, "Registrar Medicina", 1),
-              _item(context, Icons.shopping_cart, "Carrito", 2),
-              _item(context, Icons.receipt_long, "Ventas", 3),
-              _item(context, Icons.analytics, "Estadísticas", 4),
-              _item(context, Icons.monetization_on, "Ganancias", 5),
-            ],
+          SafeArea( // Para que los items no queden debajo del notch
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20), // Espacio inicial estético
+                _item(context, Icons.inventory_2_outlined, "Inventario", 0),
+                _item(context, Icons.add_circle_outline, "Registrar Medicina", 1),
+                _item(context, Icons.shopping_cart_outlined, "Carrito", 2),
+                _item(context, Icons.history_outlined, "Ventas Registradas", 3),
+                _item(context, Icons.bar_chart_rounded, "Estadísticas", 4),
+                _item(context, Icons.attach_money_rounded, "Ganancias", 5),
+              ],
+            ),
           ),
-          // El botón de flecha para cerrar en el borde derecho
+          
+          // Botón de cierre en el borde derecho central
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
               child: Container(
-                height: 50,
-                width: 30,
-                decoration: BoxDecoration(
+                height: 60,
+                width: 35,
+                decoration: const BoxDecoration(
                   color: MoeTheme.primaryBlue,
-                  borderRadius: BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20))
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(25), 
+                    bottomLeft: Radius.circular(25)
+                  )
                 ),
-                child: Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 15),
+                child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
               ),
             ),
           )
@@ -50,9 +52,13 @@ class MoeSidebar extends StatelessWidget {
   Widget _item(BuildContext context, IconData icon, String title, int index) {
     return ListTile(
       leading: Icon(icon, color: MoeTheme.primaryBlue),
-      title: Text(title),
+      title: Text(  
+        title, 
+        style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.black87)
+      ),
       onTap: () {
-        // Aquí manejaremos el cambio de pantalla con Provider
+        // Implementaremos la navegación con Provider aquí
+        Navigator.pop(context);
       },
     );
   }
