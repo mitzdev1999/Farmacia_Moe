@@ -1,3 +1,4 @@
+import 'package:farmacia_moe/screens/cart_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -61,7 +62,7 @@ class MainLayout extends StatelessWidget {
     final List<Widget> screens = [
       const InventoryScreen(),         // Índice 0
       const RegisterMedicineScreen(),  // Índice 1
-      const Center(child: Text("Pantalla Carrito (Próximamente)")), // Índice 2
+      const CartScreen(),               // Índice 2
       const Center(child: Text("Ventas Registradas")), // Índice 3
       const Center(child: Text("Estadísticas")),      // Índice 4
       const Center(child: Text("Ganancias")),         // Índice 5
