@@ -13,170 +13,163 @@ class CartScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 100),
-          const Text("Resumen de Venta", 
-            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: MoeTheme.primaryBlue)),
+          const SizedBox(height: 80),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 25),
+            child: Text("Carrito de Venta", 
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: MoeTheme.primaryBlue)),
+          ),
           
           Expanded(
             child: cartProvider.items.isEmpty
-                ? const Center(child: Text("Carrito vacío"))
+                ? _buildEmptyState()
                 : ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 15),
                     itemCount: cartProvider.items.length,
                     itemBuilder: (context, index) {
                       final item = cartProvider.items[index];
-                      return Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(color: Colors.grey.shade200),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                // Badge de Cantidad
-                                CircleAvatar(
-                                  backgroundColor: MoeTheme.primaryBlue,
-                                  radius: 18,
-                                  child: Text("${item.quantity}", style: const TextStyle(color: Colors.white, fontSize: 14)),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(item.medicine.name.toUpperCase(), 
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                      // MOSTRAR EL BLOQUE AQUÍ
-                                      Text("Ubicación: ${item.medicine.block ?? 'S/N'}", 
-                                        style: const TextStyle(color: Colors.blueGrey, fontSize: 12, fontWeight: FontWeight.w600)),
-                                    ],
-                                  ),
-                                ),
-                                Text("\$${item.total.toStringAsFixed(0)}", 
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.green)),
-                              ],
-                            ),
-                            const Divider(height: 20),
-                            // BOTONES DE ACCIÓN
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                _actionIconButton(Icons.edit_note, "Cant.", Colors.blue, () => _showEditQty(context, cartProvider, index, item)),
-                                const SizedBox(width: 10),
-                                _actionIconButton(Icons.sell_outlined, "Desc.", Colors.orange, () => _showEditPrice(context, cartProvider, index)),
-                                const SizedBox(width: 10),
-                                _actionIconButton(Icons.delete_sweep, "Quitar", Colors.red, () => cartProvider.removeItem(index)),
-                              ],
-                            )
-                          ],
-                        ),
-                      );
+                      return _buildCartCard(context, item, index, cartProvider);
                     },
                   ),
           ),
-          _buildBottomSummary(context, cartProvider),
+
+          if (cartProvider.items.isNotEmpty) _buildBottomPanel(context, cartProvider),
         ],
       ),
     );
   }
 
-  Widget _actionIconButton(IconData icon, String label, Color color, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-        child: Row(
-          children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(width: 4),
-            Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // DIÁLOGO PARA EDITAR CANTIDAD
-  void _showEditQty(BuildContext context, CartProvider provider, int index, dynamic item) {
-    final controller = TextEditingController(text: item.quantity.toString());
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Editar Cantidad"),
-        content: TextField(controller: controller, keyboardType: TextInputType.number, decoration: InputDecoration(hintText: "Máximo: ${item.medicine.stock}")),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cerrar")),
-          ElevatedButton(onPressed: () {
-            provider.updateQuantity(index, int.tryParse(controller.text) ?? 1);
-            Navigator.pop(context);
-          }, child: const Text("Actualizar")),
-        ],
-      ),
-    );
-  }
-
-  // DIÁLOGO PARA DESCUENTO (PRECIO A GUSTO)
-  void _showEditPrice(BuildContext context, CartProvider provider, int index) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Precio Especial"),
-        content: TextField(controller: controller, keyboardType: TextInputType.number, decoration: const InputDecoration(prefixText: "\$", hintText: "Nuevo precio total")),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cerrar")),
-          ElevatedButton(onPressed: () {
-            provider.updateCustomPrice(index, double.tryParse(controller.text) ?? 0.0);
-            Navigator.pop(context);
-          }, child: const Text("Aplicar")),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomSummary(BuildContext context, CartProvider provider) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2))]),
-      child: SafeArea(
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("TOTAL:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Text("\$${provider.totalCart.toStringAsFixed(0)}", 
-                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: MoeTheme.primaryBlue)),
-              ],
-            ),
-            const SizedBox(height: 15),
-            SizedBox(
-              width: double.infinity, 
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: MoeTheme.primaryBlue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                onPressed: provider.isSaving ? null : () => _finalizar(context, provider),
-                child: provider.isSaving 
-                  ? const CircularProgressIndicator(color: Colors.white) 
-                  : const Text("COBRAR AHORA", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _finalizar(BuildContext context, CartProvider provider) async {
-    final res = await provider.finalizeSale();
-    if (res == "SUCCESS") {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Venta Exitosa"), backgroundColor: Colors.green));
+  Widget _buildCartCard(BuildContext context, CartItem item, int index, CartProvider provider) {
+    // Calculamos para el texto informativo
+    int paks = 0;
+    int units = item.quantity;
+    if (item.medicine.quantityPack != null && item.medicine.quantityPack! > 0) {
+      paks = item.quantity ~/ item.medicine.quantityPack!;
+      units = item.quantity % item.medicine.quantityPack!;
     }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              // Cantidad principal
+              Container(
+                height: 45, width: 45,
+                decoration: BoxDecoration(color: MoeTheme.lightBlue, borderRadius: BorderRadius.circular(12)),
+                alignment: Alignment.center,
+                child: Text("${item.quantity}", style: const TextStyle(fontWeight: FontWeight.bold, color: MoeTheme.primaryBlue, fontSize: 18)),
+              ),
+              const SizedBox(width: 15),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.medicine.name.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text("Bloque: ${item.medicine.block}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                    // DESGLOSE DE PAQUETES (Solo si aplica)
+                    if (paks > 0)
+                      Text("Contiene: $paks Pack + $units Unid.", style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 11)),
+                  ],
+                ),
+              ),
+              Text("\$${item.total.toStringAsFixed(0)}", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green)),
+            ],
+          ),
+          const Divider(height: 25),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              _btnAccion(Icons.edit, "Cant.", Colors.blue, () => _editQty(context, provider, index, item)),
+              const SizedBox(width: 8),
+              _btnAccion(Icons.discount, "Precio", Colors.orange, () => _editPrice(context, provider, index)),
+              const SizedBox(width: 8),
+              _btnAccion(Icons.delete_forever, "Quitar", Colors.red, () => provider.removeItem(index)),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _btnAccion(IconData icon, String txt, Color color, VoidCallback tap) {
+    return InkWell(
+      onTap: tap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+        child: Row(children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(txt, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+        ]),
+      ),
+    );
+  }
+
+  void _editQty(BuildContext context, CartProvider p, int i, CartItem item) {
+    final c = TextEditingController(text: item.quantity.toString());
+    showDialog(context: context, builder: (context) => AlertDialog(
+      title: const Text("Cambiar Cantidad"),
+      content: TextField(controller: c, keyboardType: TextInputType.number, decoration: InputDecoration(hintText: "Stock: ${item.medicine.stock}")),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
+        ElevatedButton(onPressed: () { p.updateQuantity(i, int.tryParse(c.text) ?? 1); Navigator.pop(context); }, child: const Text("Cambiar")),
+      ],
+    ));
+  }
+
+  void _editPrice(BuildContext context, CartProvider p, int i) {
+    final c = TextEditingController();
+    showDialog(context: context, builder: (context) => AlertDialog(
+      title: const Text("Precio Especial"),
+      content: TextField(controller: c, keyboardType: TextInputType.number, decoration: const InputDecoration(prefixText: "\$")),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cerrar")),
+        ElevatedButton(onPressed: () { p.updateCustomPrice(i, double.tryParse(c.text) ?? 0.0); Navigator.pop(context); }, child: const Text("Aplicar")),
+      ],
+    ));
+  }
+
+  Widget _buildBottomPanel(BuildContext context, CartProvider provider) {
+    return Container(
+      padding: const EdgeInsets.all(25),
+      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -4))], borderRadius: const BorderRadius.vertical(top: Radius.circular(30))),
+      child: SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          const Text("TOTAL DE VENTA", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+          Text("\$${provider.totalCart.toStringAsFixed(0)}", style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: MoeTheme.primaryBlue)),
+        ]),
+        const SizedBox(height: 20),
+        SizedBox(width: double.infinity, height: 55, child: ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: MoeTheme.primaryBlue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+          onPressed: provider.isSaving ? null : () => _pagar(context, provider),
+          child: provider.isSaving ? const CircularProgressIndicator(color: Colors.white) : const Text("FINALIZAR Y COBRAR", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+        ))
+      ])),
+    );
+  }
+
+  void _pagar(BuildContext context, CartProvider p) async {
+    final res = await p.finalizeSale();
+    if (res == "SUCCESS" && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("✅ Venta Guardada"), backgroundColor: Colors.green));
+    } else if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("❌ $res"), backgroundColor: Colors.red));
+    }
+  }
+
+  Widget _buildEmptyState() {
+    return const Center(child: Text("Agrega productos desde el Inventario", style: TextStyle(color: Colors.grey)));
   }
 }
