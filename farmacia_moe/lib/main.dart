@@ -1,4 +1,6 @@
+import 'package:farmacia_moe/providers/sales_provider.dart';
 import 'package:farmacia_moe/screens/cart_screen.dart';
+import 'package:farmacia_moe/screens/sales_history_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -26,6 +28,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => InventoryProvider()..init()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
+        ChangeNotifierProvider(create: (_) => SalesProvider()..init()),
       ],
       child: const FarmaciaMoeApp(),
     ),
@@ -63,7 +66,7 @@ class MainLayout extends StatelessWidget {
       const InventoryScreen(),         // Índice 0
       const RegisterMedicineScreen(),  // Índice 1
       const CartScreen(),               // Índice 2
-      const Center(child: Text("Ventas Registradas")), // Índice 3
+      const SalesHistoryScreen(), // Índice 3
       const Center(child: Text("Estadísticas")),      // Índice 4
       const Center(child: Text("Ganancias")),         // Índice 5
     ];
