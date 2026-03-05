@@ -12,30 +12,34 @@ class RegisterMedicineScreen extends StatefulWidget {
 
 class _RegisterMedicineScreenState extends State<RegisterMedicineScreen> {
   final _formKey = GlobalKey<FormState>();
-  
-  // Controladores
-  final nameController = TextEditingController();
-  final principleController = TextEditingController();
-  final unitPriceController = TextEditingController();
-  final packagePriceController = TextEditingController();
-  final quantifyPackController = TextEditingController();
-  final buyPriceController = TextEditingController();
-  final blockController = TextEditingController();
-  final stockController = TextEditingController();
-  final descriptionController = TextEditingController();
+  bool _isSaving = false;
+
+  // Controladores de texto
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController principleController = TextEditingController();
+  final TextEditingController unitPriceController = TextEditingController();
+  final TextEditingController packagePriceController = TextEditingController();
+  final TextEditingController quantityPackController = TextEditingController();
+  final TextEditingController buyPriceController = TextEditingController();
+  final TextEditingController blockController = TextEditingController();
+  final TextEditingController stockController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
   
   DateTime? selectedDate;
   String generatedCode = "";
 
-  // Función para generar el código automáticamente
-  void _generateCode(String name) {
-    if (name.isEmpty) return;
+  // Lógica de generación de código: Primera y última letra + número o "MED"
+  void _updateGeneratedCode(String name) {
+    if (name.trim().isEmpty) {
+      setState(() => generatedCode = "");
+      return;
+    }
     
     String firstWord = name.trim().split(' ')[0];
     String firstLetter = firstWord[0].toUpperCase();
     String lastLetter = firstWord[firstWord.length - 1].toUpperCase();
     
-    // Buscar números en el nombre (ej: 250MG -> 250)
+    // Buscar cualquier número en el nombre completo (ej: 500mg)
     RegExp regExp = RegExp(r'\d+');
     var match = regExp.firstMatch(name);
     String suffix = match != null ? match.group(0)! : "MED";
@@ -48,103 +52,168 @@ class _RegisterMedicineScreenState extends State<RegisterMedicineScreen> {
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: DateTime.now().add(const Duration(days: 365)), // Sugerir 1 año a futuro
       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(primary: MoeTheme.primaryBlue),
+        ),
+        child: child!,
+      ),
     );
     if (picked != null) setState(() => selectedDate = picked);
   }
 
-  Future<void> _registrar() async {
+  Future<void> _registrarMedicina() async {
     if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSaving = true);
 
     try {
       await FirebaseFirestore.instance.collection('medicines').add({
-        'name': nameController.text.toLowerCase(),
-        'activePrinciple': principleController.text.toLowerCase(),
+        'name': nameController.text.trim().toLowerCase(),
+        'activePrinciple': principleController.text.trim().toLowerCase(),
         'code': generatedCode,
-        'unitPrice': double.parse(unitPriceController.text),
+        'unitPrice': double.tryParse(unitPriceController.text) ?? 0.0,
         'packagePrice': double.tryParse(packagePriceController.text),
-        'quantityPack': int.tryParse(quantifyPackController.text),
-        'buyPrice': double.tryParse(buyPriceController.text),
-        'block': blockController.text,
-        'stock': int.parse(stockController.text),
-        'description': descriptionController.text,
+        'quantityPack': int.tryParse(quantityPackController.text),
+        'buyPrice': double.tryParse(buyPriceController.text) ?? 0.0,
+        'block': blockController.text.trim(),
+        'stock': int.tryParse(stockController.text) ?? 0,
+        'description': descriptionController.text.trim().isEmpty ? null : descriptionController.text.trim(),
         'expirationDate': selectedDate != null ? Timestamp.fromDate(selectedDate!) : null,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Medicina registrada con éxito")));
-      _formKey.currentState!.reset();
-      setState(() {
-        selectedDate = null;
-        generatedCode = "";
-      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(backgroundColor: Colors.green, content: Text("✅ Medicina registrada correctamente")),
+        );
+        _limpiarFormulario();
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(backgroundColor: Colors.red, content: Text("❌ Error de permisos o red: $e")),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  void _limpiarFormulario() {
+    _formKey.currentState!.reset();
+    nameController.clear();
+    principleController.clear();
+    unitPriceController.clear();
+    packagePriceController.clear();
+    quantityPackController.clear();
+    buyPriceController.clear();
+    blockController.clear();
+    stockController.clear();
+    descriptionController.clear();
+    setState(() {
+      selectedDate = null;
+      generatedCode = "";
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(25),
+        padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 40),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 60),
-              const Text("Registrar Medicina", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: MoeTheme.primaryBlue)),
-              const SizedBox(height: 20),
-              
-              _input(nameController, "Nombre *", isRequired: true, onChanged: _generateCode),
-              Text("Código generado: $generatedCode", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-              const SizedBox(height: 15),
-              
-              _input(principleController, "Principio Activo (Opcional)"),
-              _input(unitPriceController, "Precio Unitario *", isNumber: true, isRequired: true),
-              
-              Row(
-                children: [
-                  Expanded(child: _input(packagePriceController, "Precio Pack", isNumber: true)),
-                  const SizedBox(width: 10),
-                  Expanded(child: _input(quantifyPackController, "Cant. Pack", isNumber: true)),
-                ],
-              ),
-              
-              _input(buyPriceController, "Precio de Compra", isNumber: true),
-              
-              Row(
-                children: [
-                  Expanded(child: _input(blockController, "Bloque *", isRequired: true)),
-                  const SizedBox(width: 10),
-                  Expanded(child: _input(stockController, "Stock Inicial *", isNumber: true, isRequired: true)),
-                ],
-              ),
-              
-              _input(descriptionController, "Descripción", maxLines: 3),
-              
-              // Selector de Fecha
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(selectedDate == null ? "Seleccionar Vencimiento" : "Vence: ${DateFormat('dd/MM/yyyy').format(selectedDate!)}"),
-                trailing: const Icon(Icons.calendar_month, color: MoeTheme.primaryBlue),
-                onTap: () => _selectDate(context),
-              ),
-              
+              const SizedBox(height: 40),
+              const Text("Nueva Medicina", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: MoeTheme.primaryBlue)),
+              const Text("Completa los datos para el inventario", style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 30),
+              
+              _buildInput(nameController, "Nombre del producto *", Icons.medication, isRequired: true, onChanged: _updateGeneratedCode),
+              
+              if (generatedCode.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 15, left: 5),
+                  child: Text("Código sugerido: $generatedCode", style: const TextStyle(fontWeight: FontWeight.bold, color: MoeTheme.primaryBlue)),
+                ),
+
+              _buildInput(principleController, "Principio Activo", Icons.science_outlined),
+              
+              Row(
+                children: [
+                  Expanded(child: _buildInput(unitPriceController, "Precio Venta *", Icons.attach_money, isNumber: true, isRequired: true)),
+                  const SizedBox(width: 15),
+                  Expanded(child: _buildInput(buyPriceController, "Precio Compra", Icons.shopping_bag_outlined, isNumber: true)),
+                ],
+              ),
+
+              Row(
+                children: [
+                  Expanded(child: _buildInput(packagePriceController, "Precio Pack", Icons.inventory_2_outlined, isNumber: true)),
+                  const SizedBox(width: 15),
+                  Expanded(child: _buildInput(quantityPackController, "Cant. Pack", Icons.grid_view, isNumber: true)),
+                ],
+              ),
+
+              Row(
+                children: [
+                  Expanded(child: _buildInput(blockController, "Bloque/Ubicación *", Icons.grid_on, isRequired: true)),
+                  const SizedBox(width: 15),
+                  Expanded(child: _buildInput(stockController, "Stock Inicial *", Icons.add_chart, isNumber: true, isRequired: true)),
+                ],
+              ),
+
+              _buildInput(descriptionController, "Notas adicionales", Icons.description_outlined, maxLines: 2),
+
+              const SizedBox(height: 10),
+              // Selector de Fecha Estilizado
+              InkWell(
+                onTap: () => _selectDate(context),
+                child: Container(
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: MoeTheme.lightBlue.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: MoeTheme.primaryBlue.withOpacity(0.2)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        selectedDate == null ? "Fecha de Vencimiento" : "Vence: ${DateFormat('dd/MM/yyyy').format(selectedDate!)}",
+                        style: TextStyle(color: selectedDate == null ? Colors.grey[700] : MoeTheme.primaryBlue, fontWeight: FontWeight.w500),
+                      ),
+                      const Icon(Icons.calendar_today, color: MoeTheme.primaryBlue),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 40),
+              
               SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: MoeTheme.primaryBlue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-                  onPressed: _registrar,
-                  child: const Text("Registrar Medicina", style: TextStyle(color: Colors.white, fontSize: 18)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: MoeTheme.primaryBlue,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    elevation: 0,
+                  ),
+                  onPressed: _isSaving ? null : _registrarMedicina,
+                  child: _isSaving 
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("Guardar en Inventario", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 50),
             ],
           ),
         ),
@@ -152,21 +221,23 @@ class _RegisterMedicineScreenState extends State<RegisterMedicineScreen> {
     );
   }
 
-  Widget _input(TextEditingController controller, String label, {bool isNumber = false, bool isRequired = false, int maxLines = 1, Function(String)? onChanged}) {
+  Widget _buildInput(TextEditingController controller, String label, IconData icon, {bool isNumber = false, bool isRequired = false, int maxLines = 1, Function(String)? onChanged}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.only(bottom: 20),
       child: TextFormField(
         controller: controller,
-        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
         maxLines: maxLines,
         onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          prefixIcon: Icon(icon, color: MoeTheme.primaryBlue, size: 20),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
           filled: true,
-          fillColor: MoeTheme.lightBlue.withOpacity(0.2),
+          fillColor: MoeTheme.lightBlue.withOpacity(0.3),
+          labelStyle: const TextStyle(color: Colors.black54),
         ),
-        validator: (value) => isRequired && (value == null || value.isEmpty) ? "Requerido" : null,
+        validator: (value) => isRequired && (value == null || value.isEmpty) ? "Campo obligatorio" : null,
       ),
     );
   }
