@@ -1,3 +1,4 @@
+import 'package:farmacia_moe/providers/cart_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/inventory_provider.dart';
@@ -181,7 +182,10 @@ class InventoryScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _actionButton(Icons.shopping_basket, "Vender", Colors.green, () {}),
+                _actionButton(Icons.shopping_basket, "Vender", Colors.green, () {
+                  Navigator.pop(context);
+                  _showQuantityDialog(context, med);
+                }),
                 _actionButton(Icons.edit, "Editar", Colors.orange, () {}),
                 _actionButton(Icons.delete, "Borrar", Colors.red, () {}),
               ],
@@ -213,4 +217,44 @@ class InventoryScreen extends StatelessWidget {
       ],
     );
   }
+}
+void _showQuantityDialog(BuildContext context, Medicine med) {
+  final TextEditingController qtyController = TextEditingController();
+  
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text("Vender ${med.name}"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text("Disponible: ${med.stock}"),
+          TextField(
+            controller: qtyController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: "Cantidad a vender"),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
+        ElevatedButton(
+          onPressed: () {
+            int qty = int.tryParse(qtyController.text) ?? 0;
+            if (qty > 0 && qty <= med.stock) {
+              // 1. Agregar al carrito
+              Provider.of<CartProvider>(context, listen: false).addToCart(med, qty);
+              // 2. Limpiar buscador (asumiendo que tienes el provider de inventario)
+              Provider.of<InventoryProvider>(context, listen: false).showAll();
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Agregado al carrito"))
+              );
+            }
+          }, 
+          child: const Text("Agregar")
+        ),
+      ],
+    ),
+  );
 }
