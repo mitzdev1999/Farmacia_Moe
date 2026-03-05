@@ -16,14 +16,24 @@ class InventoryProvider extends ChangeNotifier {
 
   // Cargar medicinas en tiempo real
   void init() {
-    _isLoading = true;
-    _db.collection('medicines').snapshots().listen((snapshot) {
+  _isLoading = true;
+  notifyListeners(); // Notificar que empezó a cargar
+
+  _db.collection('medicines').snapshots().listen(
+    (snapshot) {
       _allMedicines = snapshot.docs.map((doc) => Medicine.fromFirestore(doc)).toList();
       _filteredMedicines = _allMedicines;
       _isLoading = false;
       notifyListeners();
-    });
-  }
+    },
+    onError: (error) {
+      print("Error en Firestore: $error");
+      _isLoading = false;
+      notifyListeners();
+      // Aquí podrías guardar el mensaje de error para mostrarlo en la UI
+    },
+  );
+}
 
   // Buscador con Debounce de 1.5 segundos
   void search(String query) {
