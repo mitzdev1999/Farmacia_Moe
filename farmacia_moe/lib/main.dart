@@ -1,3 +1,4 @@
+import 'package:farmacia_moe/providers/cart_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -18,6 +19,7 @@ void main() async {
       providers: [
         // El operador ..init() asegura que las medicinas se carguen apenas inicie la app
         ChangeNotifierProvider(create: (_) => InventoryProvider()..init()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
       ],
       child: const FarmaciaMoeApp(),
     ),
