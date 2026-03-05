@@ -1,0 +1,82 @@
+{
+  "project_info": {
+    "project_number": "34964347847",
+    "project_id": "farmacia-app-e60c1",
+    "storage_bucket": "farmacia-app-e60c1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:34964347847:android:5d7b744b73792e1cc997e2",
+        "android_client_info": {
+          "package_name": "com.example.farmacia_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "34964347847-0jkd6ki9rggc15ph7pb0ojn6vdcvae34.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6nmcLeoahIojIMZUwyaKvzwEJrgQrl_w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "34964347847-0jkd6ki9rggc15ph7pb0ojn6vdcvae34.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "34964347847-dhdjv3etejdkdtcbmtuqv6kg4usjp8jv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.farmaciaApp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:34964347847:android:6c307b686d3585b5c997e2",
+        "android_client_info": {
+          "package_name": "com.example.farmacia_moe"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "34964347847-0jkd6ki9rggc15ph7pb0ojn6vdcvae34.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6nmcLeoahIojIMZUwyaKvzwEJrgQrl_w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "34964347847-0jkd6ki9rggc15ph7pb0ojn6vdcvae34.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "34964347847-dhdjv3etejdkdtcbmtuqv6kg4usjp8jv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.farmaciaApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
