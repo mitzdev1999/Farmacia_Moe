@@ -32,6 +32,18 @@ class CartProvider extends ChangeNotifier {
 
   double get totalCart => _items.fold(0, (sum, item) => sum + item.total);
 
+  void updateQuantity(int index, int newQuantity) {
+    if (newQuantity > 0 && newQuantity <= _items[index].medicine.stock) {
+      _items[index].quantity = newQuantity;
+      notifyListeners();
+    }
+  }
+
+  void updateCustomPrice(int index, double newPrice) {
+    _items[index].customPrice = newPrice;
+    notifyListeners();
+  }
+
   void addToCart(Medicine medicine, int quantity) {
     _items.add(CartItem(medicine: medicine, quantity: quantity));
     notifyListeners();
