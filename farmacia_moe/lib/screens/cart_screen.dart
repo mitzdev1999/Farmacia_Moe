@@ -144,8 +144,14 @@ class CartScreen extends StatelessWidget {
   Widget _buildBottomPanel(BuildContext context, CartProvider provider) {
     return Container(
       padding: const EdgeInsets.all(25),
-      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -4))], borderRadius: const BorderRadius.vertical(top: Radius.circular(30))),
+      decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: const Offset(0, -4))], borderRadius: const BorderRadius.vertical(top: Radius.circular(30))),
       child: SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        // CONTADOR DE ÍTEMS ÚNICOS
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          const Text("PRODUCTOS DIFERENTES", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 12)),
+          Text("${provider.items.length}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 14)),
+        ]),
+        const SizedBox(height: 5),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           const Text("TOTAL DE VENTA", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
           Text("\$${provider.totalCart.toStringAsFixed(0)}", style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: MoeTheme.primaryBlue)),

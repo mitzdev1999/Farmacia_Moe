@@ -4,8 +4,22 @@ import 'package:intl/intl.dart';
 import '../providers/sales_provider.dart';
 import '../theme.dart';
 
-class SalesHistoryScreen extends StatelessWidget {
+class SalesHistoryScreen extends StatefulWidget {
   const SalesHistoryScreen({super.key});
+
+  @override
+  State<SalesHistoryScreen> createState() => _SalesHistoryScreenState();
+}
+
+class _SalesHistoryScreenState extends State<SalesHistoryScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Se ejecuta una sola vez al entrar, y el Provider decidirá si lee o no.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<SalesProvider>(context, listen: false).init();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,8 +31,6 @@ class SalesHistoryScreen extends StatelessWidget {
       body: Column(
         children: [
           const SizedBox(height: 60),
-          
-          // HEADER CON CALENDARIO Y FILTROS
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Row(
@@ -38,14 +50,17 @@ class SalesHistoryScreen extends StatelessWidget {
                 ),
                 Row(
                   children: [
-                    // Botón Ver Todo (solo aparece si hay filtro)
+                    // BOTÓN REFRESH MANUAL
+                    IconButton(
+                      icon: const Icon(Icons.refresh, color: Colors.green),
+                      tooltip: "Actualizar",
+                      onPressed: () => salesProvider.refreshSales(),
+                    ),
                     if (isFiltered)
                       IconButton(
                         icon: const Icon(Icons.history, color: Colors.orange),
-                        tooltip: "Ver Todo",
                         onPressed: () => salesProvider.setDate(null),
                       ),
-                    // Botón Calendario
                     IconButton(
                       icon: const Icon(Icons.calendar_month, color: MoeTheme.primaryBlue, size: 30),
                       onPressed: () async {
@@ -63,11 +78,7 @@ class SalesHistoryScreen extends StatelessWidget {
               ],
             ),
           ),
-
-          // TARJETA DE RESUMEN DE GANANCIAS
           _buildTotalCard(salesProvider),
-
-          // LISTADO DE VENTAS
           Expanded(
             child: salesProvider.isLoading 
               ? const Center(child: CircularProgressIndicator())
@@ -87,18 +98,14 @@ class SalesHistoryScreen extends StatelessWidget {
     );
   }
 
+  // ... (Los widgets _buildTotalCard, _buildSaleTile y _buildNoSalesView se mantienen igual)
   Widget _buildTotalCard(SalesProvider provider) {
     return Container(
       margin: const EdgeInsets.all(20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [MoeTheme.primaryBlue, Color(0xFF1E3A8A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: const LinearGradient(colors: [MoeTheme.primaryBlue, Color(0xFF1E3A8A)]),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: MoeTheme.primaryBlue.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -120,21 +127,12 @@ class SalesHistoryScreen extends StatelessWidget {
   Widget _buildSaleTile(dynamic sale) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.grey.shade100)),
       child: ExpansionTile(
-        shape: const Border(), // Quita la línea divisoria por defecto
-        leading: CircleAvatar(
-          backgroundColor: MoeTheme.lightBlue.withOpacity(0.5),
-          child: const Icon(Icons.receipt, color: MoeTheme.primaryBlue),
-        ),
+        leading: CircleAvatar(backgroundColor: MoeTheme.lightBlue.withOpacity(0.5), child: const Icon(Icons.receipt, color: MoeTheme.primaryBlue)),
         title: Text("Ticket #${sale.id.substring(0, 5).toUpperCase()}", style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(DateFormat('hh:mm a').format(sale.timestamp)),
-        trailing: Text("\$${sale.totalPrice.toStringAsFixed(0)}", 
-          style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 18)),
+        trailing: Text("\$${sale.totalPrice.toStringAsFixed(0)}", style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 18)),
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -146,19 +144,11 @@ class SalesHistoryScreen extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("${item.quantity}x ${item.medicineName}", style: const TextStyle(color: Colors.black87)),
+                      Text("${item.quantity}x ${item.medicineName}"),
                       Text("\$${item.totalPrice.toStringAsFixed(0)}", style: const TextStyle(fontWeight: FontWeight.w600)),
                     ],
                   ),
                 )).toList(),
-                const Divider(),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text("Fecha:", style: TextStyle(color: Colors.grey, fontSize: 12)),
-                    Text(DateFormat('dd/MM/yyyy').format(sale.timestamp), style: const TextStyle(fontSize: 12)),
-                  ],
-                )
               ],
             ),
           )
@@ -168,18 +158,10 @@ class SalesHistoryScreen extends StatelessWidget {
   }
 
   Widget _buildNoSalesView(bool isFiltered) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search_off, size: 80, color: Colors.grey[300]),
-          const SizedBox(height: 10),
-          Text(
-            isFiltered ? "No hubo ventas en esta fecha" : "Aún no hay ventas registradas",
-            style: const TextStyle(color: Colors.grey),
-          ),
-        ],
-      ),
-    );
+    return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      Icon(Icons.search_off, size: 80, color: Colors.grey[300]),
+      const SizedBox(height: 10),
+      Text(isFiltered ? "No hubo ventas en esta fecha" : "Aún no hay ventas registradas"),
+    ]));
   }
 }

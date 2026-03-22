@@ -9,33 +9,80 @@ class InventoryProvider extends ChangeNotifier {
   List<Medicine> _allMedicines = [];
   List<Medicine> _filteredMedicines = [];
   bool _isLoading = false;
+  bool _hasLoaded = false; // Bandera para control de cuota de lecturas
   Timer? _debounce;
 
   List<Medicine> get medicines => _filteredMedicines;
   bool get isLoading => _isLoading;
 
-  // Cargar medicinas en tiempo real
-  void init() {
-  _isLoading = true;
-  notifyListeners(); // Notificar que empezó a cargar
+  // CAMBIO VITAL: Usamos Future para realizar una petición única y ahorrar lecturas
+  Future<void> init() async {
+    // Si ya tenemos datos, no volvemos a consultar a Firebase para ahorrar cuota
+    if (_hasLoaded) return; 
 
-  _db.collection('medicines').snapshots().listen(
-    (snapshot) {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // .get() descarga la colección una sola vez en lugar de mantener un túnel abierto
+      final snapshot = await _db.collection('medicines').get();
+      
       _allMedicines = snapshot.docs.map((doc) => Medicine.fromFirestore(doc)).toList();
       _filteredMedicines = _allMedicines;
+      _hasLoaded = true; 
+    } catch (error) {
+      debugPrint("Error en Firestore: $error");
+    } finally {
       _isLoading = false;
       notifyListeners();
-    },
-    onError: (error) {
-      print("Error en Firestore: $error");
-      _isLoading = false;
-      notifyListeners();
-      // Aquí podrías guardar el mensaje de error para mostrarlo en la UI
-    },
-  );
-}
+    }
+  }
 
-  // Buscador con Debounce de 1.5 segundos
+  // Método para forzar la recarga si es necesario (ej: un botón de refrescar)
+  Future<void> refreshInventory() async {
+    _hasLoaded = false;
+    await init();
+  }
+
+  // MÉTODO PARA ACTUALIZAR TODOS LOS CAMPOS
+  Future<void> updateMedicine({
+    required String id,
+    required String name,
+    required String activePrinciple,
+    required String block,
+    required String description,
+    required DateTime? expirationDate,
+    required double packagePrice,
+    required int quantityPack,
+    required int stock,
+    required double unitPrice,
+  }) async {
+    try {
+      await _db.collection('medicines').doc(id).update({
+        'name': name.toLowerCase(),
+        'activePrinciple': activePrinciple.toLowerCase(),
+        'block': block,
+        'description': description,
+        'expirationDate': expirationDate != null ? Timestamp.fromDate(expirationDate) : null,
+        'packagePrice': packagePrice,
+        'quantityPack': quantityPack,
+        'stock': stock,
+        'unitPrice': unitPrice,
+      });
+      
+      // Actualizamos la lista local para reflejar el cambio sin re-descargar todo de Firebase
+      int index = _allMedicines.indexWhere((m) => m.id == id);
+      if (index != -1) {
+        // Aquí podrías actualizar el objeto localmente si lo deseas, 
+        // o simplemente llamar a refreshInventory() si la cuota no es problema en este punto.
+      }
+      
+    } catch (e) {
+      debugPrint("Error al actualizar: $e");
+    }
+  }
+
+  // Tu lógica de búsqueda es excelente porque filtra en memoria (local) y es gratuita
   void search(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
 
@@ -54,7 +101,6 @@ class InventoryProvider extends ChangeNotifier {
     });
   }
 
-  // Filtro de Pendientes (Precio <= 50 o Bloque es Null)
   void filterPendientes() {
     _filteredMedicines = _allMedicines.where((med) {
       return med.unitPrice <= 50 || med.block == null;

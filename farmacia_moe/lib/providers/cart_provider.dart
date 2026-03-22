@@ -9,12 +9,11 @@ class CartItem {
 
   CartItem({required this.medicine, required this.quantity}) : customPrice = 0;
 
-  // LÓGICA MATEMÁTICA DE PRECIOS (Paquetes + Unidades)
   double get total {
-    // Si hay un precio manual (descuento), tiene prioridad total
+    // Si hay un precio manual, manda sobre cualquier otra lógica
     if (customPrice > 0) return customPrice;
 
-    // Si no tiene configuración de paquetes, cálculo simple
+    // Lógica de paquetes/unidades
     if (medicine.quantityPack == null || medicine.packagePrice == null || medicine.quantityPack! <= 0) {
       return medicine.unitPrice * quantity;
     }
@@ -23,10 +22,7 @@ class CartItem {
     double precioPack = medicine.packagePrice!;
     double precioUnit = medicine.unitPrice;
 
-    // División entera (~/) para saber cuántos paquetes completos hay
     int numeroDePaquetes = quantity ~/ cantPack; 
-    
-    // Residuo (%) para saber cuántas unidades sobran
     int unidadesSueltas = quantity % cantPack;
 
     return (numeroDePaquetes * precioPack) + (unidadesSueltas * precioUnit);
@@ -52,60 +48,66 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- MÉTODOS REPARADOS PARA TU ERROR DE COMPILACIÓN ---
+
   void updateQuantity(int index, int newQuantity) {
-    if (newQuantity > 0 && newQuantity <= _items[index].medicine.stock) {
-      _items[index].quantity = newQuantity;
-      notifyListeners();
+    if (index >= 0 && index < _items.length) {
+      // Validamos que no supere el stock disponible que ya conocemos
+      if (newQuantity > 0 && newQuantity <= _items[index].medicine.stock) {
+        _items[index].quantity = newQuantity;
+        notifyListeners();
+      }
     }
   }
 
   void updateCustomPrice(int index, double newPrice) {
-    _items[index].customPrice = newPrice;
+    if (index >= 0 && index < _items.length) {
+      _items[index].customPrice = newPrice;
+      notifyListeners();
+    }
+  }
+
+  void clearCart() {
+    _items.clear();
     notifyListeners();
   }
 
-  // TRANSACCIÓN SEGURA EN FIREBASE
+  // --- LÓGICA DE GUARDADO DE ALTO RENDIMIENTO ---
+
   Future<String> finalizeSale() async {
     if (_items.isEmpty) return "El carrito está vacío";
     _isSaving = true;
     notifyListeners();
 
     try {
-      await FirebaseFirestore.instance.runTransaction((transaction) async {
-        List<Map<String, dynamic>> saleItems = [];
+      final WriteBatch batch = FirebaseFirestore.instance.batch();
+      List<Map<String, dynamic>> saleItems = [];
 
-        for (var cartItem in _items) {
-          DocumentReference medRef = FirebaseFirestore.instance
-              .collection('medicines').doc(cartItem.medicine.id);
-          
-          DocumentSnapshot snap = await transaction.get(medRef);
-          if (!snap.exists) throw "El producto ${cartItem.medicine.name} ya no existe.";
-
-          int currentStock = snap.get('stock');
-          if (currentStock < cartItem.quantity) {
-            throw "Stock insuficiente para ${cartItem.medicine.name}. Disponible: $currentStock";
-          }
-
-          // 1. Descontar Stock
-          transaction.update(medRef, {'stock': currentStock - cartItem.quantity});
-
-          // 2. Preparar el registro detallado para la venta
-          saleItems.add({
-            'medicineId': cartItem.medicine.id,
-            'medicineName': cartItem.medicine.name,
-            'quantity': cartItem.quantity,
-            'totalPrice': cartItem.total,
-          });
-        }
-
-        // 3. Crear el ticket de venta
-        DocumentReference saleRef = FirebaseFirestore.instance.collection('sales').doc();
-        transaction.set(saleRef, {
-          'items': saleItems,
-          'totalPrice': totalCart,
-          'timestamp': FieldValue.serverTimestamp(),
+      for (var cartItem in _items) {
+        DocumentReference medRef = FirebaseFirestore.instance
+            .collection('medicines').doc(cartItem.medicine.id);
+        
+        // Descontamos stock sin leer el documento (0 lecturas)
+        batch.update(medRef, {
+          'stock': FieldValue.increment(-cartItem.quantity)
         });
+
+        saleItems.add({
+          'medicineId': cartItem.medicine.id,
+          'medicineName': cartItem.medicine.name,
+          'quantity': cartItem.quantity,
+          'totalPrice': cartItem.total,
+        });
+      }
+
+      DocumentReference saleRef = FirebaseFirestore.instance.collection('sales').doc();
+      batch.set(saleRef, {
+        'items': saleItems,
+        'totalPrice': totalCart,
+        'timestamp': FieldValue.serverTimestamp(),
       });
+
+      await batch.commit(); // Se ejecuta todo en un solo viaje al servidor
 
       _items.clear();
       _isSaving = false;

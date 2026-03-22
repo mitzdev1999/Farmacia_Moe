@@ -48,6 +48,8 @@ class Medicine {
     );
   }
 
+  get price => null;
+
   // Convertir de Objeto Dart a Map para guardar en Firestore
   Map<String, dynamic> toMap() {
     return {

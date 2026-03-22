@@ -1,22 +1,31 @@
-import 'package:farmacia_moe/providers/sales_provider.dart';
-import 'package:farmacia_moe/screens/cart_screen.dart';
-import 'package:farmacia_moe/screens/sales_history_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+
+// Importaciones de Firebase (Asegúrate de que el archivo exista)
 import 'firebase_options.dart';
+
+// Importaciones de tu tema
 import 'theme.dart';
 
-// Importación de Providers
+// Importaciones de Providers
 import 'providers/inventory_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/navigation_provider.dart';
+import 'providers/sales_provider.dart';
 
-// Importación de Pantallas
-import 'screens/login_screen.dart';
+// Importaciones de Pantallas
 import 'screens/inventory_screen.dart';
 import 'screens/register_medicine_screen.dart';
+import 'screens/cart_screen.dart';
+import 'screens/sales_history_screen.dart';
+import 'screens/stats_screen.dart';
+
+// Importación de Widgets
 import 'widgets/moe_sidebar.dart';
+
+// ... (Tus imports se mantienen igual)
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,10 +34,10 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => InventoryProvider()..init()),
+        ChangeNotifierProvider(create: (_) => InventoryProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
-        ChangeNotifierProvider(create: (_) => SalesProvider()..init()),
+        ChangeNotifierProvider(create: (_) => SalesProvider()),
       ],
       child: const FarmaciaMoeApp(),
     ),
@@ -44,11 +53,7 @@ class FarmaciaMoeApp extends StatelessWidget {
       title: 'La Farmacia de Moe',
       debugShowCheckedModeBanner: false,
       theme: MoeTheme.light,
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const LoginScreen(),
-        '/home': (context) => const MainLayout(),
-      },
+      home: const MainLayout(),
     );
   }
 }
@@ -58,30 +63,31 @@ class MainLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Escuchamos el índice actual del provider de navegación
     final navProvider = Provider.of<NavigationProvider>(context);
 
-    // Lista de pantallas ordenadas según el Sidebar
+    // CARGA PEREZOSA: Las pantallas pesadas solo existen si el índice es el correcto.
+    // Esto evita que el initState de Historial se ejecute al abrir Inventario.
     final List<Widget> screens = [
-      const InventoryScreen(),         // Índice 0
-      const RegisterMedicineScreen(),  // Índice 1
-      const CartScreen(),               // Índice 2
-      const SalesHistoryScreen(), // Índice 3
-      const Center(child: Text("Estadísticas")),      // Índice 4
-      const Center(child: Text("Ganancias")),         // Índice 5
+      const InventoryScreen(),                // 0
+      const RegisterMedicineScreen(),         // 1
+      const CartScreen(),                     // 2
+      navProvider.currentIndex == 3 
+          ? const SalesHistoryScreen() 
+          : const SizedBox.shrink(),          // 3 (Historial)
+      navProvider.currentIndex == 4 
+          ? const StatsScreen() 
+          : const SizedBox.shrink(),          // 4 (Stats)
+      const Center(child: Text("Ganancias")),  // 5
     ];
 
     return Scaffold(
-      drawer: MoeSidebar(),
+      drawer: const MoeSidebar(),
       body: Stack(
         children: [
-          // IndexedStack mantiene el estado de las pantallas al cambiar entre ellas
           IndexedStack(
             index: navProvider.currentIndex,
             children: screens,
           ),
-
-          // Botón flotante para abrir el Drawer
           Positioned(
             top: 50, 
             left: 15,
@@ -91,7 +97,7 @@ class MainLayout extends StatelessWidget {
                 elevation: 4,
                 backgroundColor: MoeTheme.primaryBlue,
                 onPressed: () => Scaffold.of(context).openDrawer(),
-                child: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 18),
+                child: const Icon(Icons.menu, color: Colors.white, size: 18),
               ),
             ),
           ),

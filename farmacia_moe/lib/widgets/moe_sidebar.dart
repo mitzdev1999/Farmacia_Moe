@@ -1,98 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../theme.dart';
 import '../providers/navigation_provider.dart';
+import '../theme.dart';
 
 class MoeSidebar extends StatelessWidget {
   const MoeSidebar({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final navProvider = Provider.of<NavigationProvider>(context);
+
     return Drawer(
-      width: MediaQuery.of(context).size.width * 0.75,
-      backgroundColor: Colors.white,
-      child: Stack(
+      child: ListView(
+        padding: EdgeInsets.zero,
         children: [
-          SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 30),
-                // Título opcional pequeño o logo si deseas
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  child: Text(
-                    "MENÚ PRINCIPAL",
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                      fontSize: 12
-                    ),
-                  ),
-                ),
-                _item(context, Icons.inventory_2_outlined, "Inventario", 0),
-                _item(context, Icons.add_circle_outline, "Registrar Medicina", 1),
-                _item(context, Icons.shopping_cart_outlined, "Carrito", 2),
-                _item(context, Icons.history_outlined, "Ventas Registradas", 3),
-                _item(context, Icons.bar_chart_rounded, "Estadísticas", 4),
-                _item(context, Icons.attach_money_rounded, "Ganancias", 5),
-              ],
-            ),
-          ),
-          
-          // Botón de cierre con flecha en el centro del borde derecho
-          Align(
-            alignment: Alignment.centerRight,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                height: 60,
-                width: 35,
-                decoration: const BoxDecoration(
-                  color: MoeTheme.primaryBlue,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(25), 
-                    bottomLeft: Radius.circular(25)
-                  )
-                ),
-                child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
+          const DrawerHeader(
+            decoration: BoxDecoration(color: MoeTheme.primaryBlue),
+            child: Center(
+              child: Text(
+                "Farmacia Moe",
+                style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
               ),
             ),
-          )
+          ),
+          _drawerItem(Icons.inventory, "Inventario", 0, navProvider, context),
+          _drawerItem(Icons.add_circle, "Registrar Medicina", 1, navProvider, context),
+          _drawerItem(Icons.shopping_cart, "Carrito", 2, navProvider, context),
+          _drawerItem(Icons.history, "Historial de Ventas", 3, navProvider, context),
+          _drawerItem(Icons.bar_chart, "Estadísticas", 4, navProvider, context),
+          _drawerItem(Icons.attach_money, "Ganancias", 5, navProvider, context),
         ],
       ),
     );
   }
 
-  Widget _item(BuildContext context, IconData icon, String title, int index) {
-    // Usamos listen: false porque solo queremos ejecutar la función, no reconstruir el item aquí
-    final navProvider = Provider.of<NavigationProvider>(context, listen: false);
-    final isSelected = Provider.of<NavigationProvider>(context).currentIndex == index;
+  Widget _drawerItem(IconData icon, String title, int index, NavigationProvider nav, BuildContext context) {
+    bool isSelected = nav.currentIndex == index;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-      decoration: BoxDecoration(
-        color: isSelected ? MoeTheme.lightBlue : Colors.transparent,
-        borderRadius: BorderRadius.circular(10),
+    return ListTile(
+      leading: Icon(icon, color: isSelected ? MoeTheme.primaryBlue : Colors.grey),
+      title: Text(
+        title, 
+        style: TextStyle(
+          color: isSelected ? MoeTheme.primaryBlue : Colors.black,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
+        )
       ),
-      child: ListTile(
-        leading: Icon(
-          icon, 
-          color: isSelected ? MoeTheme.primaryBlue : Colors.grey[700]
-        ),
-        title: Text(
-          title, 
-          style: TextStyle(
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, 
-            color: isSelected ? MoeTheme.primaryBlue : Colors.black87
-          )
-        ),
-        onTap: () {
-          navProvider.setIndex(index); // Cambia la pantalla en el MainLayout
-          Navigator.pop(context);      // Cierra el Sidebar
-        },
-      ),
+      onTap: () {
+        nav.setIndex(index);
+        Navigator.pop(context); // Cierra el Drawer
+      },
     );
   }
 }
